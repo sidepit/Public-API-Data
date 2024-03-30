@@ -69,8 +69,6 @@ message FillData {
 message OrderData {
     int32 version = 1;
     uint64 epoch = 10;
-//    EpochBar bar = 20;
-//    MarketQuote quote = 30;
     repeated BookOrder bookorders = 40;
     repeated FillData fills = 50;
 }
