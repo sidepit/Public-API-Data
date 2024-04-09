@@ -37,6 +37,12 @@ message BookOrder {
     int32 filled_qty = 40;
     int32 remaining_qty = 50;
     int32 canceled_qty = 60;
+
+    int32 agres_fill_qty = 62;
+    float agres_avg_price = 63;
+    int32 pass_fill_qty = 64;
+    float avg_price = 65;
+
     string symbol = 70;
     string update_time = 80;
     string orderid = 90;
@@ -62,9 +68,9 @@ message MarketData {
 message FillData {
     string agressiveid = 10;
     string passiveid = 20;
-    int32 price = 30;
-    int32 qty = 40;
-    uint32 agressive_side = 50;
+    uint32  price = 30;
+    uint32  qty = 40;
+    int32 agressive_side = 50;
 }
 
 message OrderData {
@@ -93,5 +99,3 @@ message TraderPositionOrders {
     repeated Position closed = 30;
     repeated OrderFills orderfills = 40; 
 } 
-
-
