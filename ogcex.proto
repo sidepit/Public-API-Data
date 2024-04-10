@@ -91,16 +91,6 @@ message OrderFills {
     repeated FillData fills = 50;
 }
 
-message OpenOrder { 
-    OrderFills orderfill = 10;
-    string cancel_order_digest = 20;
-}
-
-message TraderOrders { 
-    repeated OpenOrder openorders = 10;
-    repeated OrderFills closedorders = 20;
-}
-
 message TraderPositionOrders {
     string traderid = 10;
     string symbol = 20;
@@ -112,5 +102,3 @@ message RequestPositions {
     string traderid = 10;
     string symbol = 20;
 }
-
-
