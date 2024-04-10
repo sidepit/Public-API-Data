@@ -83,8 +83,7 @@ message OrderData {
 // per user section 
 message Position { 
     int32 position = 10; //  -1 short 0 flat 1 long   -10 for short 10 
-    int32 avg_price = 20;
-    int32 realized_pnl = 30;
+    uint32 avg_price = 20;
 }
 
 message OrderFills {
@@ -92,10 +91,26 @@ message OrderFills {
     repeated FillData fills = 50;
 }
 
+message OpenOrder { 
+    OrderFills orderfill = 10;
+    string cancel_order_digest = 20;
+}
+
+message TraderOrders { 
+    repeated OpenOrder openorders = 10;
+    repeated OrderFills closedorders = 20;
+}
+
 message TraderPositionOrders {
     string traderid = 10;
     string symbol = 20;
-    Position position = 25;
-    repeated Position closed = 30;
-    repeated OrderFills orderfills = 40; 
+    Position position = 30;
+    map<string, OrderFills> orderfills = 40;
 } 
+
+message RequestPositions {
+    string traderid = 10;
+    string symbol = 20;
+}
+
+
