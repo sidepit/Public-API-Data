@@ -9,15 +9,22 @@ message Transaction {
         string cancel_orderid = 30;
         AuctionBid auction_bid = 40;
     }
-    string id = 100;
-    bytes signature = 110;   
+    string sidepit_id = 100;
+}
+
+message SignedTransaction {
+    int32       signature_version = 1;   // 1 for raw, 2 for "magic bitcoin recoverable"
+    Transaction transaction       = 10;  // the transaction 
+    bytes       tx_digest         = 20;  // optional - transaction digest that was signed 
+    string      pubkey            = 30;  // optional - pubkey of trans.sidepit_id
+    bytes       signature         = 110; // required - 64 or 65 byte signature, base64 encoded 
 }
 
 message NewOrder {
-    bool side = 10;
-    int32 size = 20;
-    int32 price = 30;
-    string symbol = 40;
+    sint32      side   = 10; // 1 for buy - -1 for sell 
+    int32       size   = 20; // quantity - always positive 
+    int32       price  = 30; 
+    string      symbol = 40;
 }
 
 message AuctionBid {
