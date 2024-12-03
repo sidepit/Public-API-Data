@@ -279,7 +279,7 @@ message ActiveProduct {
 
 /*
     All enums must be at the bottom
-    (ptoroc jsdoc doesn't like it)
+    (protoc => jsdoc converter doesn't like it)
 */
 
 enum UnlockRequestAmount {
