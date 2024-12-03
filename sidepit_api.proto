@@ -36,14 +36,7 @@ message AuctionBid {
 }
 
 message UnlockRequest {
-    enum AmountType {
-        NONE = 0;
-        MAX = 1;
-        MIN = 2;
-        EXPLICIT = 3;
-    }
-
-    AmountType minmax = 20;     
+    UnlockRequestAmount minmax = 20;     
     uint64 explicit_amount = 30; 
 }
 
@@ -185,8 +178,7 @@ message Schedule {
     uint64      date = 10;
     uint64      trading_open_time = 20; 
     uint64      trading_close_time = 30;
-    repeated string
-                product = 40;             
+    repeated string product = 40;
 }
 
 // Exchange Trading Information 
@@ -199,16 +191,6 @@ message TradingSession {
 message SessionStatus { 
     ExchangeState    estate = 10;
     string           session_id = 20;
-}
-
-enum ExchangeState {
-    EXCHANGE_UNKNOWN = 0;
-    EXCHANGE_PENDING_OPEN = 1;
-    EXCHANGE_OPEN = 2;
-    EXCHANGE_RECOVERING = 3;
-    EXCHANGE_CLOSING = 4;
-    EXCHANGE_SETTLED = 5; 
-    EXCHANGE_CLOSED = 6;
 }
 
 message ExchangeStatus {
@@ -246,8 +228,7 @@ message AccountState {
     int64           available_margin = 100;
     bool            is_restricted = 110; 
     int32           reduce_only = 112; 
-    map<string, Position>   
-                    positions = 120;
+    map<string, Position>   positions = 120;
     sint32          carried_position = 130;
     sint32          new_position = 140;       
     int32           open_bids = 150;       
@@ -261,14 +242,6 @@ message BtcLocks {
     uint64          lock_sats = 40;
     uint64          unlock_sats = 50;
     bool            is_pending = 60;
-}
-
-// reply/request API 
-enum ReplyRequestTypes {
-    NONE = 0;
-    ACTIVE_PRODUCT = 1;
-    POSITIONS = 2;
-    QUOTE = 4;
 }
 
 message RequestReply {
@@ -298,8 +271,38 @@ message ActiveProduct {
     ContractBar             contractbar = 30; 
 }
 
-//depricated 
+// @deprecated
 // message RequestPositions {
 //     string traderid = 10;
 //     string symbol = 20;
 // }
+
+/*
+    All enums must be at the bottom
+    (ptoroc jsdoc doesn't like it)
+*/
+
+enum UnlockRequestAmount {
+    NONE = 0;
+    MAX = 1;
+    MIN = 2;
+    EXPLICIT = 3;
+}
+
+// reply/request API 
+enum ReplyRequestTypes {
+    NONE = 0;
+    ACTIVE_PRODUCT = 1;
+    POSITIONS = 2;
+    QUOTE = 4;
+}
+
+enum ExchangeState {
+    EXCHANGE_UNKNOWN = 0;
+    EXCHANGE_PENDING_OPEN = 1;
+    EXCHANGE_OPEN = 2;
+    EXCHANGE_RECOVERING = 3;
+    EXCHANGE_CLOSING = 4;
+    EXCHANGE_SETTLED = 5; 
+    EXCHANGE_CLOSED = 6;
+}
