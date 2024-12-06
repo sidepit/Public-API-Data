@@ -283,7 +283,7 @@ message ActiveProduct {
 */
 
 enum UnlockRequestAmount {
-    NONE = 0;
+    NONE_AMT = 0;
     MAX = 1;
     MIN = 2;
     EXPLICIT = 3;
@@ -291,7 +291,7 @@ enum UnlockRequestAmount {
 
 // reply/request API 
 enum ReplyRequestTypes {
-    NONE = 0;
+    NONE_REP = 0;
     ACTIVE_PRODUCT = 1;
     POSITIONS = 2;
     QUOTE = 4;
