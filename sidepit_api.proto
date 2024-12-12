@@ -283,7 +283,7 @@ message ActiveProduct {
 */
 
 enum UnlockRequestAmount {
-    NONE = 0;
+    NONE_AMT = 0;
     MAX = 1;
     MIN = 2;
     EXPLICIT = 3;
