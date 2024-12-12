@@ -291,7 +291,7 @@ enum UnlockRequestAmount {
 
 // reply/request API 
 enum ReplyRequestTypes {
-    NONE_REP = 0;
+    NONE = 0;
     ACTIVE_PRODUCT = 1;
     POSITIONS = 2;
     QUOTE = 4;
