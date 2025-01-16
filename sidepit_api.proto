@@ -271,6 +271,14 @@ message ActiveProduct {
     ContractBar             contractbar = 30; 
 }
 
+// EpochOrders contain ordering post auction  
+message EpochOrders {
+    uint64                  epoch = 10;
+    ExchangeState           estate = 15; 
+    map<string, Transaction> // map key is hash to be sorted by client for for final ordering 
+                            orders = 20;
+}
+
 // @deprecated
 // message RequestPositions {
 //     string traderid = 10;
