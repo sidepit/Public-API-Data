@@ -423,7 +423,7 @@ enum RejectCode {
 }
 
 enum AmountType {
-    NONE = 0;
+    AMOUNT_NONE = 0;
     MAX = 1;
     MIN = 2;
     EXPLICIT = 3;
