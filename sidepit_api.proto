@@ -156,6 +156,10 @@ message OrderData {
     string      ticker = 12;
     repeated    BookOrder bookorders = 40;
     repeated    FillData fills = 50;
+    // At-least this many more OrderData messages follow on this feed for the
+    // same epoch. 0 = last (or only) message. Soft lower bound: a consumer is
+    // fine receiving more than promised. Enables a blocking read-until-0 loop.
+    uint32      more_in_epoch = 80;
 }
 
 // Product Specifications
