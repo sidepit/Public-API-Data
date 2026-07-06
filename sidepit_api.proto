@@ -1,24 +1,28 @@
 syntax = "proto3";
 
-// input 
 message Transaction {
     int32 version = 1;                  
     uint64 timestamp = 10; 
     oneof tx {
         NewOrder        new_order = 20;
+        CancelReplace   replace_order = 22;
         string          cancel_orderid = 30;
         AuctionBid      auction_bid = 40;
         UnlockRequest   unlock_req = 50;
+        BtcLocks        btc_locks = 60;
+        Delegate        new_delegate    = 70;
+        string          revoke_delegate = 72;
     }
     string sidepit_id = 101;
+    string agent_id  = 102;
 }
 
 message SignedTransaction {
-    int32       signature_version = 2;   // 0 for raw, 2 for "magic bitcoin recoverable"
-    Transaction transaction       = 11;  // the transaction 
-    string      tx_digest         = 21;  // optional - transaction digest that was signed 
-    string      pubkey            = 31;  // optional - pubkey of sidepit_id
-    string      signature         = 111; // required - 64 hex encoded or 65 byte recoverable base64 encoded 
+    int32       signature_version = 2;
+    Transaction transaction       = 11;
+    string      tx_digest         = 21;
+    string      pubkey            = 31;
+    string      signature         = 111;
 }
 
 message RejectedTransaction {
@@ -27,26 +31,35 @@ message RejectedTransaction {
 }
 
 message NewOrder {
-    sint32      side   = 11; // 1 for buy - -1 for sell 
-    int32       size   = 20; // quantity - always positive 
+    sint32      side   = 11;
+    int32       size   = 20;
     int32       price  = 30; 
     string      ticker = 40;
+}
+
+message CancelReplace {
+    int32       price  = 30; 
+    string      ref_orderid = 40;
 }
 
 message AuctionBid {
     uint64      epoch = 10;
     string      hash = 20;
     string      ordering_salt = 30;
-    int32       bid = 40;  // in satoshis 
+    int32       bid = 40;
 }
 
 message UnlockRequest {
-
     AmountType minmax = 20;     
     uint64 explicit_amount = 30; 
 }
 
-// output
+message Delegate {
+    string  agent_id = 10;
+    string  agent_pubkey = 20;
+    string  signature = 111;
+}
+
 message EpochEvent {
     uint64      epoch = 10;
     string      hash = 20;
@@ -55,17 +68,27 @@ message EpochEvent {
 }
 
 message ExchangeEvent {
-    ExchangeState state = 10;
+    ExchangeState   state = 10;
+}
+
+message BtcEvent {
+    SignedTransaction    btc_locks = 10;
+}
+
+message AccountEvent {
+    SignedTransaction    account_tx = 10;
 }
 
 message TxBlockStream { 
-    uint64                     epoch = 10;
-    ExchangeState              estate = 20; 
+    uint64                   epoch = 10;
+    ExchangeState            estate = 20; 
 
     oneof txepoch {
         EpochEvent            epoch_event = 25;
         SignedTransaction     stx = 31;
         ExchangeEvent         exchange_event = 40;
+        BtcEvent              btc_event = 50;
+        AccountEvent          account_event = 60;
     }
 }
 
@@ -91,6 +114,14 @@ message EpochBar {
     int32           volume = 60;
 }
 
+message BarHistory {
+    string              ticker = 10;
+    repeated EpochBar   bars = 20;
+    string              session_id = 30;
+    string              prev_session_id = 40;
+    string              next_session_id = 50;
+}
+
 message ContractBar {
     string          ticker = 10;
     uint64          epoch = 15;
@@ -107,7 +138,7 @@ message ContractBar {
 }
 
 message BookOrder {
-    sint32      side = 10; // 1 for buy - -1 for sell 
+    sint32      side = 10;
     int32       price = 20;
     int32       open_qty = 30;
     int32       filled_qty = 40;
@@ -119,8 +150,9 @@ message BookOrder {
     float       avg_price = 65;
     string      ticker = 70;
     string      update_time = 80;   
-    string      orderid = 90;       // "sidepit_id" + ":" + Transaction.timestamp 
-    string      traderid = 100;     // sidepit_id 
+    string      orderid = 90;
+    string      traderid = 100;
+    string      agentid = 110;
     uint64      sequence = 120;
 }
 
@@ -147,7 +179,7 @@ message FillData {
     uint32      price = 30;
     uint32      qty = 40;
     int32       agressive_side = 50;
-    uint64      microtime = 60; // epoch in microseconds 
+    uint64      microtime = 60;
 }
 
 message OrderData {
@@ -156,18 +188,23 @@ message OrderData {
     string      ticker = 12;
     repeated    BookOrder bookorders = 40;
     repeated    FillData fills = 50;
-    // At-least this many more OrderData messages follow on this feed for the
-    // same epoch. 0 = last (or only) message. Soft lower bound: a consumer is
-    // fine receiving more than promised. Enables a blocking read-until-0 loop.
+    repeated    TraderMarginState margin_states = 70;
     uint32      more_in_epoch = 80;
 }
 
-// Product Specifications
+message TraderMarginState {
+    string  sidepit_id       = 10;
+    sint64  available_margin = 20;
+    sint32  risk_position    = 30;
+    sint64  open_pnl         = 40;
+    sint32  net_oi           = 50;
+}
+
 message Contract {
     string      symbol = 10;
     uint32      unit_size = 20;
-    string      unit = 30;  // e.g. "USD"
-    string      price_quote = 40; //  e.g. "SAT"
+    string      unit = 30;
+    string      price_quote = 40;
     int32       price_quote_units = 50; 
     uint32      tic_min = 60; 
     uint32      tic_value = 70; 
@@ -175,10 +212,8 @@ message Contract {
     uint64      initial_margin = 90; 
     uint64      maint_margin = 100; 
     int32       position_limits = 110;
-    uint64      trading_open_time = 120; // depricated
-    uint64      trading_close_time = 130; // depricated 
-    string      trading_open_time_zone = 140;    // e.g., "06:00:00 America/Los_Angeles"
-    string      trading_close_time_zone = 150;   // e.g., "18:00:00 America/Los_Angeles" 
+    string      trading_open_time_zone = 140;
+    string      trading_close_time_zone = 150;
 }
 
 message Product { 
@@ -190,14 +225,17 @@ message Product {
 }
 
 message Schedule { 
-    uint64      date = 10;
-    uint64      trading_open_time = 20; 
-    uint64      trading_close_time = 30;
-    repeated string
-                product = 40;             
+    uint64          date = 10;
+    uint64          trading_open_time = 20; 
+    uint64          trading_close_time = 30;
+    repeated string product = 40;             
 }
 
-// Exchange Trading Information 
+message CalendarSchedule {
+    string              exchange_id = 10;
+    repeated Schedule   products = 30;
+}
+
 message TradingSession {
     string      session_id = 10;
     Schedule    schedule = 20;
@@ -220,49 +258,21 @@ message ActiveContractProduct {
     Schedule        schedule = 30; 
 }
 
-// per user section 
 message Position { 
     sint32         position = 10; 
     float          avg_price = 21;
-    uint32         old_avg = 20; //depricated
+    uint32         old_avg = 20;
 }
 
-// Contract and Products and Schedule 
-// Schedule is per Session   
 message ContractScheduleProducts {
     Contract            contract = 10;
     Schedule            schedule = 20;
     repeated Product    products = 30;
 }
 
-
 message OrderFills {
     BookOrder       order = 10;
     repeated        FillData fills = 50;
-}
-
-message AccountState { 
-    string          sidepit_id = 10;
-    string          pubkey = 20;
-    int64           net_locked = 30;
-    int64           pending_unlock = 40;
-    int64           realized_pnl = 50;
-    int64           unrealized_pnl = 60;  
-    int64           margin_required = 80;
-    int64           available_balance = 90;
-    int64           available_margin = 100;
-    bool            is_restricted = 110; 
-    int32           reduce_only = 112; 
-    map<string, Position>   
-                    positions = 120;   // depricated 
-    sint32          carried_position = 130; // depricated 
-    sint32          new_position = 140; // depricated        
-    int32           open_bids = 150; // depricated        
-    int32           open_asks = 160; // depricated 
-
-    int64           total_balance = 24;            // Total balance (sats)
-    map<string, ContractMargin>   
-                    contract_margins = 121; 
 }
 
 message BtcLocks { 
@@ -274,104 +284,123 @@ message BtcLocks {
     bool            is_pending = 60;
 }
 
-
-// Account margin state with mark-to-market settlement
-//
-// FOR API DEVELOPERS - Balance Calculations:
-//   total_balance = available_balance + realized_pnl + unrealized_pnl()
-//   withdrawable = available_margin
-//   unrealized_pnl() = sum across positions: qty × (current_price - avg_price) × tic_value
-//
-// INTRADAY (EXCHANGE_OPEN):
-//   available_balance = yesterday's settled balance (static until EOD)
-//   realized_pnl = today's realized P&L from closed positions only (in PositionMargin)
-//   unrealized_pnl = calculated by API from open positions and current prices
-//   available_margin = available_balance + realized_pnl - margin_required (withdrawable)
-//
-// AFTER SETTLEMENT (mark-to-market at EOD):
-//   realized_pnl = today's realized P&L from closed positions + open positions P&L (unrealized → realized at mark-to-market price)
-//   available_balance += realized_pnl  (all P&L now settled and withdrawable)
-//   realized_pnl = 0  (reset for next day)
-//   unrealized_pnl = 0  (all positions marked to settlement price, avg_price updated)
-
-
-// Position for a ticker. avg_price resets daily at settlement.
-// message Position { 
-//     sint32         position = 10;     // Net quantity (+ long, - short)
-//     float          avg_price = 21;    // Entry price (resets daily to settlement price)
-// }
-
-// Margin and P&L for positions
 message PositionMargin {
-    int64           realized_pnl = 50;            // Today's realized P&L (sats, resets daily)
-    int64           realized_fees = 52;           // Today's realized fees (sats, resets daily)
-    // int64           unrealized_pnl = 60;       // Deprecated
-    int64           margin_required = 80;         // Margin required (sats)
-    int32           reduce_only = 112;            // Trading restriction: -1=sell only, 0=none, 1=buy only
-    sint32          carried_position = 130;       // Overnight position from yesterday
-    sint32          new_position = 140;           // New position opened today
+    int64           realized_pnl = 50;
+    int64           realized_fees = 52;
+    int64           margin_required = 80;
+    int32           reduce_only = 112;
+    sint32          carried_position = 130;
+    sint32          new_position = 140;
 }
 
-// Position for one ticker
 message AccountTickerPosition {
-    string          ticker = 1;                   // Ticker symbol
-    Position        position = 10;                // Position quantity and entry price
-    PositionMargin  margin = 20;                  // Margin and P&L
-    int32           open_bids = 150;              // Open buy orders
-    int32           open_asks = 160;              // Open sell orders
+    string          ticker = 1;
+    Position        position = 10;
+    PositionMargin  margin = 20;
+    int32           open_bids = 150;
+    int32           open_asks = 160;
 }
 
-// All tickers for one contract (e.g., USDBTC)
 message ContractMargin {
-    string          symbol = 113;                 // Contract symbol
-    PositionMargin  margin = 115;                 // Total margin and P&L for contract
+    string          symbol = 113;
+    PositionMargin  margin = 115;
     map<string, AccountTickerPosition>   
-                    positions = 121;              // Positions by ticker
-    sint32          carried_open_interest = 200;  // Overnight open interest
-    sint32          net_open_interest = 210;      // Current open interest
-    int32           bid_margin_required = 220;    // Margin locked in buy orders (sats)
-    int32           ask_margin_required = 230;    // Margin locked in sell orders (sats)
+                    positions = 121;
+    sint32          carried_open_interest = 200;
+    sint32          net_open_interest = 210;
+    int32           bid_margin_required = 220;
+    int32           ask_margin_required = 230;
 }
 
 message AccountMarginState {
-    string          sidepit_id = 10;               // Trading account ID
-    string          pubkey = 20;                   // Account public key
-    int64           total_balance = 24;            // Total balance (sats)
-    int64           net_locked = 30;               // Total deposited (sats)
-    int64           pending_unlock = 40;           // Withdrawal pending (sats)
-    int64           available_balance = 90;          // Settled balance (updated daily at EOD)
-    int64           available_margin = 100;        // Withdrawable now (balance + today's P&L - margin)
-    bool            is_restricted = 110;           // Margin call - can only reduce positions
+    string              sidepit_id = 10;
+    string              pubkey = 20;
+    repeated Delegate   active_delegates = 25;
+    int64               total_balance = 24;
+    int64               net_locked = 30;
+    int64               pending_unlock = 40;
+    int64               available_balance = 90;
+    int64               available_margin = 100;
+    bool                is_restricted = 110;
     map<string, ContractMargin>   
-                    contract_margins = 121;        // Positions by contract symbol
+                        contract_margins = 121;
 }
 
-// message Settlement { 
-//     string  ticker = 10; 
-//     int64   price = 20;
-//     bool    is_last_day = 30;
-// }
+message AccountDelegate {
+    string   delegateid_oid = 10;
+    string   agent_id = 20;
+    enum DelegateStatus {
+        DELEGATE_NONE    = 0;
+        DELEGATE_ACTIVE  = 1;
+        DELEGATE_REVOKED = 2;
+    }
+    DelegateStatus status = 30;
+    bool     is_active = 40;
+    uint64   updatetime = 50;
+}
+
+message AccountRequest {
+    Transaction     account_tx = 10;
+    bool            is_pending = 20;
+    string          oid = 30;
+}
+
+message DelegateData {
+    AccountDelegate         account_delegate = 10;
+    repeated AccountRequest requests = 50;
+}
+
+message UnlockRecord {
+    AccountRequest  unlock_tx = 10;
+
+    enum UnlockStatus {
+        UNLOCK_NONE       = 0;
+        UNLOCK_PENDING    = 1;
+        UNLOCK_REJECTED   = 2;
+        UNLOCK_RESERVED  = 3;
+        UNLOCK_PROCESSING   = 4;
+        UNLOCK_COMPLETED = 5;
+    }
+    UnlockStatus    status = 20;
+    string          oid = 30;
+    uint64          amount_sats = 40;
+    string          btc_txid = 50;
+    map <uint64, UnlockStatus>
+                    updatetime = 60;
+}
+
+message AccountOperations {
+    repeated AccountDelegate    delegate_data = 80;
+    repeated UnlockRecord       unlock_records = 82;
+    repeated AccountRequest     account_requests = 90;
+}
 
 message RequestReply {
-    int32                   TypeMask = 1; 
+    int32                   TypeMask = 1;
     string                  traderid = 10;
-    string                  ticker = 30; 
+    string                  ticker = 30;
+    SignedTransaction       account_tx = 40;
+    string                  session_id = 50;
 }
 
-message ReplyRequest { 
-    int32                   TypeMask = 10; 
+message ReplyRequest {
+    int32                   TypeMask = 10;
     TraderPositionOrders    trader_positions = 20;
-    ActiveProduct           active_product = 30; 
+    ActiveProduct           active_product = 30;
     MarketData              market_data = 40;
+    BarHistory              bars = 50;
+    CalendarSchedule        calendar_schedule = 60;
 }
 
 message TraderPositionOrders {
-    string                  traderid = 10;
-    string                  symbol = 20;
-    map<string, OrderFills> orderfills = 40;
-    AccountMarginState            accountstate = 50;
-    repeated BtcLocks       locks = 60;
-} 
+    string                      traderid = 10; 
+    string                      symbol = 20;
+    map<string, OrderFills>     orderfills = 40;
+    AccountMarginState          accountstate = 50;
+    repeated BtcLocks           locks = 60;
+    TraderMarginState           trader_margin_state = 70;
+    AccountOperations           accountops = 100; 
+}
 
 message ActiveProduct { 
     string                  ticker = 2;
@@ -381,25 +410,24 @@ message ActiveProduct {
 }
 
 message EpochOrders {
-    uint64          epoch = 10;
-    ExchangeState   estate = 15; 
+    uint64                  epoch = 10;
+    ExchangeState           estate = 15; 
     map<string, Transaction> 
-                    orders = 20;
+                            orders = 20;
+    repeated Transaction    locks = 30;
+    repeated Transaction    accountops = 40;
 }
 
-//depricated 
-// message RequestPositions {
-//     string traderid = 10;
-//     string symbol = 20;
-// }
-
-// reply/request API 
 enum ReplyRequestTypes {
     NONE = 0;
     ACTIVE_PRODUCT = 1;
     POSITIONS = 2;
     QUOTE = 4;
-    SNAPSHOT = 8; 
+    SNAPSHOT = 8;
+    HISTORICAL_BARS = 16;
+    SCHEDULES = 32;
+    DELEGATE = 64;
+    UNLOCK = 128;
 }
 
 enum ExchangeState {
