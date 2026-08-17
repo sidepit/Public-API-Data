@@ -343,6 +343,7 @@ message AccountRequest {
     Transaction     account_tx = 10;
     bool            is_pending = 20;
     string          oid = 30;
+    RejectCode      reject_code = 40;
 }
 
 message DelegateData {
@@ -390,6 +391,7 @@ message ReplyRequest {
     MarketData              market_data = 40;
     BarHistory              bars = 50;
     CalendarSchedule        calendar_schedule = 60;
+    RejectCode              reject_code = 70;
 }
 
 message TraderPositionOrders {
